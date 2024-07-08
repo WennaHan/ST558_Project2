@@ -1,0 +1,91 @@
+---
+title: "draft"
+format: html
+editor: visual
+---
+
+
+# I wrote this function to interact with the crypto data of the CoinGecko API. 
+## Started in 2014, **CoinGecko** is the world's largest independent crypto data aggregator that is integrated with more than 900 crypto exchanges and lists more than 12,000 coins. CoinGecko API offers the most comprehensive and reliable crypto market data through RESTful JSON endpoints.
+
+### First, contact the CoinGecko API and return all cryptocurrencies data to preview the data in this API. This function returns a data.frame containing the id, symbol, and name of 14879 cryptocurrencies. 
+```{r}
+# Load necessary libraries
+library(httr)
+library(jsonlite)
+library(dplyr)
+
+# Define the Base URL (CoinGecko API, no Key required)
+base_url <- 'https://api.coingecko.com/api/v3/'
+
+# Function to Get List of All Cryptocurrencies
+get_all_cryptocurrencies <- function() {
+  endpoint <- paste0(base_url, 'coins/list')
+  
+  response <- GET(endpoint)
+  data <- fromJSON(content(response, as = "text"))
+  df <- as.data.frame(data)
+  
+  return(df)
+}
+
+# Get the list of all available cryptocurrencies
+crypto_list <- get_all_cryptocurrencies()
+
+# View the data structure and first few rows of the list
+str(crypto_list)
+head(crypto_list)
+```
+### Second, querying different API endpoints. One queries the '' API and another queries the '' API. 
+
+```{r}
+# Function to Get Current Data for a Specific Cryptocurrency (default as bitcoin)
+get_current_crypto_data <- function(crypto_id = "all") {
+  endpoint <- paste0(base_url, 'coins/markets')
+  params <- list(
+    vs_currency = 'usd',
+    ids = crypto_id
+  )
+  
+  response <- GET(endpoint, query = params)
+  data <- fromJSON(content(response, as = "text"), flatten = TRUE)
+  df <- as.data.frame(data)
+  
+  return(df)
+}
+get_current_crypto_data()
+```
+
+```{r}
+# Function to Get Historical Market Data (default as bitcoin data for 30 days)
+get_historical_market_data <- function(crypto_id = 'bitcoin', days = 30) {
+  endpoint <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  params <- list(
+    vs_currency = 'usd',
+    days = days
+  )
+  
+  response <- GET(endpoint, query = params)
+  data <- fromJSON(content(response, as = "text"), flatten = TRUE)
+  
+  # Convert to DataFrame
+  prices <- data$prices
+  df_prices <- data.frame(timestamp = as.POSIXct(prices[, 1] / 1000, 
+                                                 origin = '1970-01-01'), 
+                          price = prices[, 2])
+  
+  volumes <- data$total_volumes
+  df_volumes <- data.frame(timestamp = as.POSIXct(volumes[, 1] / 1000, 
+                                                  origin = '1970-01-01'), 
+                           volume = volumes[, 2])
+  
+  market_data <- merge(df_prices, df_volumes, by = 'timestamp')
+  colnames(market_data) <- c('timestamp', 'price', 'volume')
+  
+  return(market_data)
+}
+get_historical_market_data()
+```
+
+
+
