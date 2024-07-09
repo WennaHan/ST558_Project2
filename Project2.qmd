@@ -25,6 +25,7 @@ library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
 library(ggplot2)   # For data visualization
 library(reshape)   # For data visualization
+library(shiny)     # For app built
 ```
 
 ## Data Download Tab/API functions
@@ -110,7 +111,7 @@ get_historical_market_data <- function(crypto_id = 'bitcoin',
                                        days = 30) {
   # Set the url with endpoint.
   baseURL <- "https://api.coingecko.com/api/v3/"
-  fullURL <- paste0(base_URL, 'coins/', crypto_id, '/market_chart')
+  fullURL <- paste0(baseURL, 'coins/', crypto_id, '/market_chart')
   
   # Parameters for the API call
   params <- list( vs_currency = vs_currency,
@@ -277,7 +278,7 @@ cor_matrix <- round(cor(numeric_cols, use = "complete.obs"), 2)
 melted_cor_matrix <- melt(cor_matrix)
 
 # Create the heatmap
-heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = value)) +
+heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = X1, y = X2, fill = value)) +
   geom_tile(color = "white") +
   scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                        midpoint = 0, limit = c(-1, 1), space = "Lab", 

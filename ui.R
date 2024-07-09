@@ -1,7 +1,13 @@
-library(shiny)
+# Load necessary libraries
+library(httr)      # For making HTTP requests
+library(jsonlite)  # For handling JSON data
+library(dplyr)     # For data manipulation and summarization
+library(tidyr)     # For data tidying
+library(knitr)     # For generating reports
+library(ggplot2)   # For data visualization
+library(reshape)   # For data visualization
+library(shiny)     # For app built
 library(shinydashboard)
-library(ggplot2)
-library(dplyr)
 library(DT)
 
 # Define UI for the app
