@@ -46,7 +46,7 @@ server <- function(input, output, session) {
       plot_data <- switch(input$plot_type,
                           "histogram" = {
                             ggplot(data, aes_string(x = input$plot_variable)) +
-                              geom_histogram(binwidth = 50, fill = "blue", color = "black") +
+                              geom_histogram(bins = 30, fill = "blue", color = "black") +
                               ggtitle(paste("Histogram of", input$plot_variable))
                           },
                           "scatterplot" = {
