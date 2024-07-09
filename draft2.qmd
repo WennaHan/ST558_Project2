@@ -25,7 +25,7 @@ library(ggplot2)
 
 
 ## Data Download Tab/API functions
-First, I want to contact the CoinGecko API and query different API endpoints. One queries the market data for **coins**. Another queries the market data for **NFTs**.
+First, I want to contact the CoinGecko API and query different API endpoints. One queries the **current market data** for Cryptocurrencies. Another queries the **historical market data** for a Cryptocurrency.
 
 ### Endpoint 1: Function to Get Market Data for coins.
 
@@ -36,9 +36,9 @@ Users can modify three things:\
 
 ```{r}
 # Define the function to fetch coins data from CoinGecko API
-fetch_coin_data <- function(vs_currency = "usd", 
-                            order = "market_cap_desc", 
-                            per_page = 100) {
+get_coin_data <- function(vs_currency = "usd", 
+                          order = "market_cap_desc", 
+                          per_page = 100) {
   
   # Set the base url, endpoint, and combine them for the full url.
   baseURL <- "https://api.coingecko.com/api/v3/"
@@ -71,19 +71,19 @@ fetch_coin_data <- function(vs_currency = "usd",
 }
 
 # Example usage 1: default
-df <- fetch_coin_data(vs_currency = "usd", 
-                      order = "market_cap_desc", 
-                      per_page = 100)
+df <- get_coin_data(vs_currency = "usd", 
+                    order = "market_cap_desc", 
+                    per_page = 100)
 head(df)
 
 # Example usage 2: customized - Currency and Sorting Order
-df_custom <- fetch_coin_data(vs_currency = "eur", 
-                             order = "volume_desc", 
-                             per_page = 50)
+df_custom <- get_coin_data(vs_currency = "eur", 
+                           order = "volume_desc", 
+                           per_page = 50)
 head(df_custom)
 
 # Example usage 3: customized - Retrieve More Coins
-df_more_coins <- fetch_coin_data(per_page = 200)
+df_more_coins <- get_coin_data(per_page = 200)
 head(df_more_coins)
 ```
 
@@ -102,11 +102,15 @@ Users can modify three things:\
 get_historical_market_data <- function(crypto_id = 'bitcoin',
                                        vs_currency = 'usd', 
                                        days = 30) {
-  endpoint <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  # Set the url with endpoint.
+  baseURL <- "https://api.coingecko.com/api/v3/"
+  fullURL <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  
+  # Parameters for the API call
   params <- list( vs_currency = vs_currency,
                   days = days)
   
-  response <- GET(endpoint, query = params)
+  response <- GET(fullURL, query = params)
   data <- fromJSON(content(response, as = "text"), flatten = TRUE)
   
   # Extracts prices and volumes, converts timestamps, and merges them into a single data frame.
@@ -147,11 +151,11 @@ head(historical_data_tether)
 
 ## Summarize the Data.
 
-### Summarize categorical data
-### Contingency table for market cap rank and price change category
+### I created a new price change category variable (price_change_category) based on the price change percentage in 24h (price_change_percentage_24h), then, created two contingency table. First contingency table shows the count of coins by its price change. The results show that 2 got lower price, 13 stay in stable, and 85 got higher prce within last day. It shows overall cryptocurrencies are more valued by consumers.Second contingency table shows the price change for each coin to provide more details. The third table shows the price change for coins by their market capitalization rank. It shows the top valued coins gaining more values in the last day.
+
 ```{r}
 # Create a new categorical variable for price change categories
-# based on the df_coins data
+# based on the df data (default parameters)
 df <- df |>
   mutate(price_change_category = cut(price_change_percentage_24h, 
                                      breaks = c(-Inf, -10, -1, 1, 10, Inf), 
@@ -161,9 +165,17 @@ df <- df |>
                                                 "Positive", 
                                                 "Very Positive")))
 
+# Contingency table count of coins by price change category
+Count_price_change <- table(df$price_change_category)
+head(Count_price_change)
+
+# Contingency table for id by price change category
+id_by_price_change <- table(df$id, df$price_change_category)
+head(id_by_price_change)
+
 # Contingency table for market cap rank and price change category
-contingency_table <- table(df$market_cap_rank, df$price_change_category)
-head(contingency_table)
+price_change_by_market_cap_rank <- table(df$market_cap_rank, df$price_change_category)
+head(price_change_by_market_cap_rank)
 ```
 
 ## Summarize numerical data
@@ -258,3 +270,25 @@ heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = 
 # Print the heatmap
 print(heatmap_plot)
 ```
+
+
+```{r}
+# Create the plot
+price_trend_plot <- ggplot(data = historical_data_bitcoin, 
+               aes(x = timestamp, y = price)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Bitcoin Price Trend",
+       x = "Timestamp",
+       y = "Price (USD)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12))
+
+# Print the plot
+print(price_trend_plot)
+```
+
+
+
