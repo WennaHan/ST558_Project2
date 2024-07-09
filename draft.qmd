@@ -21,7 +21,9 @@ library(ggplot2)
 
 # Define the Base URL (CoinGecko API, no Key required)
 base_url <- 'https://api.coingecko.com/api/v3/'
-
+endpoint1 <- "coins/markets"
+endpoint2 <- "coins/markets"
+  
 # Function to Get List of All Cryptocurrencies
 get_all_cryptocurrencies <- function() {
   endpoint <- paste0(base_url, 'coins/list')
@@ -77,17 +79,17 @@ crypto_data <- get_current_crypto_data(c('bitcoin', 'ethereum', 'ripple'),
 head(crypto_data)
 ```
 
-### Endpoint 2: Function to Get Historical Market Data for a Cryptocurrency
+### Endpoint 2: Function to Get Historical Market Data for specific Cryptocurrencies
 Users can modify three things:\
 1) crypto_ids - List of cryptocurrencies to retrieve data for.\
 2) vs_currency - Currency to compare against.\
 3) days - Number of days of historical data.
 ```{r}
-# Create a function to get historical market data for a specific cryptocurrency, allowing customization of the cryptocurrency ID and the number of days of historical data.
-# The default cryptocurrency is bitcoin.
+# Create a function to get historical market data for specific cryptocurrencies, allowing customization of the cryptocurrency ID and the number of days of historical data.
+# The default cryptocurrencies are bitcoin, ethereum, and ripple.
 # The default comparing currency is US dollar.
 # The default the number of days of historical data is 30 days.
-get_historical_market_data <- function(crypto_id = 'bitcoin', 
+get_historical_market_data <- function(crypto_id = 'bitcoin',
                                        vs_currency = 'usd', 
                                        days = 30) {
   endpoint <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
@@ -115,7 +117,9 @@ get_historical_market_data <- function(crypto_id = 'bitcoin',
 }
 
 # Get historical market data for Bitcoin for the last 30 days
-historical_data <- get_historical_market_data('bitcoin', 'usd', 30)
+historical_data <- get_historical_market_data(crypto_id = 'bitcoin'),
+                                       vs_currency = 'usd', 
+                                       days = 30)
 
 # View the first few rows of the historical data
 head(historical_data)
@@ -124,8 +128,9 @@ head(historical_data)
 ### Third, summarize data!
 ```{r}
 # Contingency table: count of cryptocurrencies by market cap rank
-#contingency_table <- table(crypto_data$market_cap_rank)
-#print(contingency_table)
+contingency_table <- table(crypto_data$id, crypto_data$current_price)
+print(contingency_table)
+```
 
 # Example contingency table: count of cryptocurrencies by market cap rank
 contingency_table <- crypto_data |>

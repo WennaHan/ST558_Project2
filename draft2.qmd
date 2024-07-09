@@ -1,0 +1,253 @@
+---
+title: "draft2"
+format: html
+editor: visual
+---
+
+# Interacting with APIs: Example with the CoinGecko API.
+
+## Wenna Han 07/08/2024
+
+
+Started in 2014, **CoinGecko** is the world's largest independent crypto data aggregator that is integrated with more than 900 crypto exchanges and lists more than 12,000 coins. CoinGecko API offers the most comprehensive and reliable crypto market data through RESTful JSON endpoints.
+
+To use the functions for interacting with the CoinGecko API, I used the following packages:
+
+```{r}
+# Load necessary libraries
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(ggplot2)
+```
+
+
+## Data Download Tab/API functions
+First, I want to contact the CoinGecko API and query different API endpoints. One queries the market data for **coins**. Another queries the market data for **NFTs**.
+
+### Endpoint 1: Function to Get Market Data for coins.
+
+Users can modify three things:\
+1) vs_currency - The target currency for market data (default is "usd").\
+2) order - Order of the results. Options include market_cap_desc, volume_desc, market_cap_asc, etc. (default is "market_cap_desc") \
+3) per_page - Number of coins to return per page (default is 100, maximum is 250)
+
+```{r}
+# Define the function to fetch coins data from CoinGecko API
+fetch_coin_data <- function(vs_currency = "usd", 
+                            order = "market_cap_desc", 
+                            per_page = 100) {
+  
+  # Set the base url, endpoint, and combine them for the full url.
+  baseURL <- "https://api.coingecko.com/api/v3/"
+  endpoint <- "coins/markets"
+  fullURL <- paste0(baseURL, endpoint)
+  
+  # Parameters for the API call
+  params <- list(
+    vs_currency = vs_currency,
+    order = order,
+    per_page = per_page,
+    sparkline = "false"
+  )
+  
+  # Fetch data from the API
+  response <- GET(fullURL, query = params)
+  
+  # Check for a successful response
+  if (response$status_code != 200) {
+    stop("Failed to fetch data from CoinGecko API")
+  }
+  
+  # Parse the response JSON
+  data <- fromJSON(content(response, as = "text"))
+  
+  # Convert to a data frame
+  df <- as.data.frame(data)
+  
+  return(df)
+}
+
+# Example usage 1: default
+df_coins <- fetch_coin_data(vs_currency = "usd", 
+                      order = "market_cap_desc", 
+                      per_page = 100)
+head(df_coins)
+```
+
+### Endpoint 2: Function to Get Market Data for NFTs.
+
+Users can modify three things:\
+1) vs_currency - The target currency for market data (default is "usd").\
+2) order - Order of the results. Options include market_cap_desc, volume_desc, market_cap_asc, etc. (default is "market_cap_desc") \
+3) per_page - Number of coins to return per page (default is 100, maximum is 250)
+
+```{r}
+# Define the function to fetch NFTs data from CoinGecko API
+fetch_nfts_data <- function(vs_currency = "usd", 
+                            order = "market_cap_desc", 
+                            per_page = 100) {
+  
+  # Set the base url, endpoint, and combine them for the full url.
+  baseURL <- "https://api.coingecko.com/api/v3/"
+  endpoint <- "nfts/markets"
+  fullURL <- paste0(baseURL, endpoint)
+  
+  # Parameters for the API call
+  params <- list(
+    vs_currency = vs_currency,
+    order = order,
+    per_page = per_page,
+    sparkline = "false"
+  )
+  
+  # Fetch data from the API
+  response <- GET(fullURL, query = params)
+  
+  # Check for a successful response
+  #if (response$status_code != 200) {
+    #stop("Failed to fetch data from CoinGecko API")
+  #}
+  
+  # Parse the response JSON
+  data <- fromJSON(content(response, as = "text"))
+  
+  # Convert to a data frame
+  df <- as.data.frame(data)
+  
+  return(df)
+}
+
+# Example usage 1: default
+df_nfts <- fetch_nfts_data(vs_currency = "usd", 
+                      order = "market_cap_desc", 
+                      per_page = 100)
+head(df_nfts)
+```
+
+
+
+
+
+# Example usage 2: customized - Currency and Sorting Order
+df_custom <- fetch_coin_data(vs_currency = "eur", 
+                             order = "volume_desc", 
+                             per_page = 50, 
+                             page = 2)
+head(df_custom)
+
+# Example usage 3: customized - Retrieve More Coins
+df_more_coins <- fetch_coin_data(per_page = 200)
+head(df_more_coins)
+```
+
+```{r}
+# Create a new categorical variable for price change categories
+df <- df |>
+  mutate(price_change_category = cut(price_change_percentage_24h, 
+                                     breaks = c(-Inf, -10, -1, 1, 10, Inf), 
+                                     labels = c("Very Negative", 
+                                                "Negative", 
+                                                "Stable", 
+                                                "Positive", 
+                                                "Very Positive")))
+
+# Contingency table for market cap rank and price change category
+contingency_table <- table(df$market_cap_rank, df$price_change_category)
+print(contingency_table)
+```
+
+## Numerical Summaries
+
+```{r}
+# Summary statistics for current price by price change category
+price_summary <- df |>
+  group_by(price_change_category) |>
+  summarise(
+    count = n(),
+    mean_price = mean(current_price, na.rm = TRUE),
+    median_price = median(current_price, na.rm = TRUE),
+    sd_price = sd(current_price, na.rm = TRUE)
+  )
+print(price_summary)
+
+# Summary statistics for market cap by price change category
+market_cap_summary <- df |>
+  group_by(price_change_category) |>
+  summarise(
+    count = n(),
+    mean_market_cap = mean(market_cap, na.rm = TRUE),
+    median_market_cap = median(market_cap, na.rm = TRUE),
+    sd_market_cap = sd(market_cap, na.rm = TRUE)
+  )
+print(market_cap_summary)
+```
+
+## Plots
+
+### Histogram of Market Capitalization
+
+```{r}
+ggplot(df, aes(x = market_cap)) +
+  geom_histogram(bins = 50, fill = "blue", color = "black") +
+  scale_y_log10() +
+  ggtitle("Histogram of Market Capitalization") +
+  xlab("Market Capitalization (USD)") +
+  ylab("Frequency") +
+  theme_minimal()
+```
+
+```{r}
+# Scatter Plot for Market Cap vs. Trading Volume
+ggplot(df, aes(x = market_cap, y = total_volume, color = price_change_category)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle("Market Cap vs. Trading Volume by Price Change Category") +
+  xlab("Market Capitalization (USD)") +
+  ylab("Total Volume (USD)") +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set1")
+```
+
+```{r}
+# Box Plot for Price Change Percentage
+ggplot(df, aes(x = price_change_category, y = price_change_percentage_24h, fill = price_change_category)) +
+  geom_boxplot() +
+  ggtitle("Box Plot of Price Change Percentage by Category") +
+  xlab("Price Change Category") +
+  ylab("Price Change Percentage (24h)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1")
+```
+
+```{r}
+# Select numeric columns for the heatmap
+numeric_cols <- df %>% 
+  select(current_price, market_cap, total_volume, price_change_percentage_24h, 
+         market_cap_change_percentage_24h, circulating_supply, total_supply)
+
+# Calculate the correlation matrix
+cor_matrix <- round(cor(numeric_cols, use = "complete.obs"), 2)
+
+# Melt the correlation matrix for ggplot
+melted_cor_matrix <- melt(cor_matrix)
+
+# Create the heatmap
+heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +
+  coord_fixed() +
+  ggtitle("Heatmap of Correlations Between Numerical Variables") +
+  xlab("Variables") +
+  ylab("Variables")
+
+# Print the heatmap
+print(heatmap_plot)
+```
