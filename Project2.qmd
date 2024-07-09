@@ -24,6 +24,7 @@ library(dplyr)     # For data manipulation and summarization
 library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
 library(ggplot2)   # For data visualization
+library(reshape)   # For data visualization
 ```
 
 ## Data Download Tab/API functions
@@ -109,7 +110,7 @@ get_historical_market_data <- function(crypto_id = 'bitcoin',
                                        days = 30) {
   # Set the url with endpoint.
   baseURL <- "https://api.coingecko.com/api/v3/"
-  fullURL <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  fullURL <- paste0(base_URL, 'coins/', crypto_id, '/market_chart')
   
   # Parameters for the API call
   params <- list( vs_currency = vs_currency,
@@ -200,7 +201,7 @@ price_summary <- df |>
 print(price_summary)
 
 # Summary statistics for market cap by price change category
-market_cap_summary <- df_coins |>
+market_cap_summary <- df |>
   group_by(price_change_category) |>
   summarise(
     count = n(),
@@ -265,7 +266,7 @@ This heatmap displays the correlation matrix among selected numerical variables 
 
 ```{r}
 # Select numeric columns for the heatmap
-numeric_cols <- df %>% 
+numeric_cols <- df |>
   select(current_price, market_cap, total_volume, price_change_percentage_24h, 
          market_cap_change_percentage_24h, circulating_supply, total_supply)
 
