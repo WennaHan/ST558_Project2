@@ -8,30 +8,35 @@ editor: visual
 
 ## Wenna Han 07/08/2024
 
+### Overview of CoinGecko API
+
 Started in 2014, **CoinGecko** is the world's largest independent crypto data aggregator that is integrated with more than 900 crypto exchanges and lists more than 12,000 coins. CoinGecko API offers the most comprehensive and reliable crypto market data through RESTful JSON endpoints.
+
+### Required Packages
 
 To use the functions for interacting with the CoinGecko API, I used the following packages:
 
 ```{r}
 # Load necessary libraries
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(knitr)
-library(ggplot2)
+library(httr)      # For making HTTP requests
+library(jsonlite)  # For handling JSON data
+library(dplyr)     # For data manipulation and summarization
+library(tidyr)     # For data tidying
+library(knitr)     # For generating reports
+library(ggplot2)   # For data visualization
 ```
 
 ## Data Download Tab/API functions
 
 First, I want to contact the CoinGecko API and query different API endpoints. One queries the **current market data** for Cryptocurrencies. Another queries the **historical market data** for a Cryptocurrency.
 
-### Endpoint 1: Function to Get Market Data for coins.
+### Function 1: get_coin_data
 
-Users can modify three things:\
-1) vs_currency - The target currency for market data (default is "usd").\
-2) order - Order of the results. Options include market_cap_desc, volume_desc, market_cap_asc, etc. (default is "market_cap_desc")\
-3) per_page - Number of coins to return per page (default is 100, maximum is 250)
+This function fetches current market data for cryptocurrencies from CoinGecko's API. Users can specify:
+
+-   vs_currency: Target currency for market data (default is "usd").
+-   order: Order of results (e.g., by market capitalization).
+-   per_page: Number of coins per page (max is 250).
 
 ```{r}
 # Define the function to fetch coins data from CoinGecko API
@@ -86,12 +91,13 @@ df_more_coins <- get_coin_data(per_page = 200)
 head(df_more_coins)
 ```
 
-### Endpoint 2: Function to Get Historical Market Data for a specific Cryptocurrency
+### Function 2: get_historical_market_data
 
-Users can modify three things:\
-1) crypto_ids - List of cryptocurrencies to retrieve data for.\
-2) vs_currency - Currency to compare against.\
-3) days - Number of days of historical data.
+This function retrieves historical market data for a specific cryptocurrency:
+
+- crypto_id: Cryptocurrency ID (e.g., "bitcoin", "ethereum").
+- vs_currency: Currency for comparison (default is "usd").
+- days: Number of days of historical data.
 
 ```{r}
 # Create a function to get historical market data for a specific cryptocurrency, allowing customization of the cryptocurrency ID and the number of days of historical data.
@@ -148,7 +154,9 @@ historical_data_tether <- get_historical_market_data(crypto_id = 'tether',
 head(historical_data_tether)
 ```
 
-## Summarize the Data.
+## Data Summarization and Analysis
+
+After fetching data, I summarized the data:
 
 I created a new price change category variable (price_change_category) based on the price change percentage in 24h (price_change_percentage_24h), then, created two contingency table. First contingency table shows the count of coins by its price change. The results show that 2 got lower price, 13 stay in stable, and 85 got higher prce within last day. It shows overall cryptocurrencies are more valued by consumers.Second contingency table shows the price change for each coin to provide more details. The third table shows the price change for coins by their market capitalization rank. It shows the top valued coins gaining more values in the last day.
 
@@ -207,6 +215,8 @@ print(market_cap_summary)
 
 ### Histogram of Market Capitalization
 
+This histogram provides a distribution of market capitalizations across cryptocurrencies. It uses a logarithmic scale on the y-axis for better visualization of the frequency of different market capitalization ranges.
+
 ```{r}
 ggplot(df, aes(x = market_cap)) +
   geom_histogram(bins = 50, fill = "blue", color = "black") +
@@ -216,6 +226,10 @@ ggplot(df, aes(x = market_cap)) +
   ylab("Frequency") +
   theme_minimal()
 ```
+
+### Scatter Plot for Market Cap vs. Trading Volume
+
+This scatter plot visualizes the relationship between market capitalization and trading volume for cryptocurrencies, colored by their price change category. Logarithmic scales are applied to both axes to handle the wide range of values typically seen in cryptocurrency markets.
 
 ```{r}
 # Scatter Plot for Market Cap vs. Trading Volume
@@ -230,6 +244,10 @@ ggplot(df, aes(x = market_cap, y = total_volume, color = price_change_category))
   scale_color_brewer(palette = "Set1")
 ```
 
+### Box Plot for Price Change Percentage
+
+This box plot categorizes cryptocurrencies based on their price change percentages over a 24-hour period. It helps visualize the distribution of price changes across different categories.
+
 ```{r}
 # Box Plot for Price Change Percentage
 ggplot(df, aes(x = price_change_category, y = price_change_percentage_24h, fill = price_change_category)) +
@@ -240,6 +258,10 @@ ggplot(df, aes(x = price_change_category, y = price_change_percentage_24h, fill 
   theme_minimal() +
   scale_fill_brewer(palette = "Set1")
 ```
+
+### Heatmap of Correlations Between Numerical Variables
+
+This heatmap displays the correlation matrix among selected numerical variables related to cryptocurrencies, including current price, market capitalization, trading volume, and price change percentages. It helps identify potential relationships and dependencies between these variables.
 
 ```{r}
 # Select numeric columns for the heatmap
@@ -270,6 +292,10 @@ heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = 
 print(heatmap_plot)
 ```
 
+### Coin Price Trend Plot
+
+This plot shows the historical price trend of Bitcoin over a specified period (default is the last 30 days). It includes a line plot of daily prices and individual data points for clarity and trend visualization.
+
 ```{r}
 # Create the plot
 price_trend_plot <- ggplot(data = historical_data_bitcoin, 
@@ -287,3 +313,5 @@ price_trend_plot <- ggplot(data = historical_data_bitcoin,
 # Print the plot
 print(price_trend_plot)
 ```
+
+

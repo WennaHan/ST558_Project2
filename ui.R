@@ -4,50 +4,75 @@ library(ggplot2)
 library(dplyr)
 library(DT)
 
+# Define UI for the app
 ui <- dashboardPage(
-  dashboardHeader(title = "CoinGecko Cryptocurrencies Data Analysis"),
+  dashboardHeader(title = "Crypto Market Explorer"),
   dashboardSidebar(
     sidebarMenu(
+      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("About", tabName = "about", icon = icon("info-circle")),
       menuItem("Data Download", tabName = "data_download", icon = icon("download")),
-      menuItem("Data Exploration", tabName = "data_exploration", icon = icon("chart-line"))
+      menuItem("Data Exploration", tabName = "data_exploration", icon = icon("chart-bar"))
     )
   ),
   dashboardBody(
+    # Body content will be dynamically rendered based on selected tab
     tabItems(
-      tabItem(tabName = "about",
-              h2("About This App"),
-              p("This app provides analysis of cryptocurrencies data. The data includes current and historical market data for different cryptocurrencies/coins."),
-              p("The purpose of this app is to allow users to download, explore, and visualize cryptocurrencies data."),
-              p("Tabs:"),
-              p("1. About: Describes the app and data source."),
-              p("2. Data Download: Allows users to query, view, subset, and download the data."),
-              p("3. Data Exploration: Allows users to explore and visualize the data with various options.")
-      ),
-      tabItem(tabName = "data_download",
-              sidebarLayout(
-                sidebarPanel(
-                  dateInput("start_date", "Start Date", value = Sys.Date() - 30),
-                  dateInput("end_date", "End Date", value = Sys.Date()),
-                  actionButton("download_data", "Download Data")
-                ),
-                mainPanel(
-                  DTOutput("data_table"),
-                  uiOutput("subset_ui"),
-                  downloadButton("download_csv", "Download CSV")
+      # Dashboard tab
+      tabItem(tabName = "dashboard",
+              fluidRow(
+                box(
+                  title = "Welcome to Crypto Market Explorer",
+                  "This dashboard allows you to explore cryptocurrency market data from CoinGecko API.",
+                  "Navigate through different tabs to download data or explore trends."
                 )
               )
       ),
+      
+      # About tab
+      tabItem(tabName = "about",
+              fluidRow(
+                box(
+                  title = "About Crypto Market Explorer",
+                  "Purpose: This app allows users to explore and analyze cryptocurrency market data from CoinGecko API.",
+                  "Data Source: CoinGecko API provides comprehensive crypto market data.",
+                  "Tabs Purpose:",
+                  tags$ul(
+                    tags$li("Data Download: Fetch and explore raw cryptocurrency data."),
+                    tags$li("Data Exploration: Visualize and summarize cryptocurrency data.")
+                  ),
+                  tags$img(src = "coin_gecko_logo.png", height = 100, width = 100)
+                )
+              )
+      ),
+      
+      # Data Download tab
+      tabItem(tabName = "data_download",
+              fluidRow(
+                box(
+                  title = "Data Download",
+                  selectInput("vs_currency", "Select Currency:", choices = c("usd", "eur", "btc"), selected = "usd"),
+                  selectInput("order", "Select Order:", choices = c("market_cap_desc", "market_cap_asc", "volume_desc", "volume_asc"), selected = "market_cap_desc"),
+                  numericInput("per_page", "Coins per Page:", value = 100, min = 1, max = 250),
+                  actionButton("download_data", "Download Data"),
+                  hr(),
+                  dataTableOutput("downloaded_data")
+                )
+              )
+      ),
+      
+      # Data Exploration tab
       tabItem(tabName = "data_exploration",
-              sidebarLayout(
-                sidebarPanel(
-                  selectInput("plot_var", "Variable to Plot", choices = c("Price", "Volume")),
-                  selectInput("summary_type", "Summary Type", choices = c("Mean", "Median", "Sum")),
-                  actionButton("plot_data", "Generate Plot")
-                ),
-                mainPanel(
-                  plotOutput("data_plot"),
-                  verbatimTextOutput("summary_output")
+              fluidRow(
+                box(
+                  title = "Data Exploration",
+                  selectInput("plot_variable", "Select Variable:", choices = c("market_cap", "total_volume", "price_change_percentage_24h")),
+                  selectInput("plot_type", "Select Plot Type:", choices = c("histogram", "scatterplot", "boxplot")),
+                  actionButton("plot_button", "Generate Plot"),
+                  hr(),
+                  plotOutput("exploration_plot"),
+                  hr(),
+                  verbatimTextOutput("summary_text")
                 )
               )
       )

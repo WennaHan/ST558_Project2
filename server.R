@@ -1,65 +1,77 @@
+# Define server logic
 server <- function(input, output, session) {
-  data <- reactiveVal()
+  # Function to fetch data from CoinGecko API
+  get_coin_data <- function(vs_currency = "usd", order = "market_cap_desc", per_page = 100) {
+    baseURL <- "https://api.coingecko.com/api/v3/"
+    endpoint <- "coins/markets"
+    fullURL <- paste0(baseURL, endpoint)
+    
+    params <- list(
+      vs_currency = vs_currency,
+      order = order,
+      per_page = per_page,
+      sparkline = "false"
+    )
+    
+    response <- GET(fullURL, query = params)
+    
+    if (response$status_code != 200) {
+      stop("Failed to fetch data from CoinGecko API")
+    }
+    
+    data <- fromJSON(content(response, as = "text"))
+    df <- as.data.frame(data)
+    
+    return(df)
+  }
   
+  # Server logic for Data Download tab
   observeEvent(input$download_data, {
-    # For demonstration, we use static data instead of querying an API
-    bitcoin_data <- data.frame(
-      timestamp = as.POSIXct(c("2024-06-09 10:04:39", "2024-06-09 11:01:52", "2024-06-09 12:08:47", 
-                               "2024-06-09 13:05:10", "2024-06-09 14:02:01", "2024-06-09 15:05:09")),
-      price = c(69464.55, 69489.02, 69512.59, 69636.45, 69658.47, 69737.13),
-      volume = c(11297784379, 11553052271, 11572887602, 11652997674, 8892545791, 11181055188)
-    )
-    data(bitcoin_data)
-  })
-  
-  output$data_table <- renderDT({
-    req(data())
-    datatable(data())
-  })
-  
-  output$subset_ui <- renderUI({
-    req(data())
-    fluidRow(
-      column(6, checkboxGroupInput("subset_columns", "Columns to Display", choices = names(data()), selected = names(data()))),
-      column(6, sliderInput("subset_rows", "Rows to Display", min = 1, max = nrow(data()), value = c(1, nrow(data()))))
-    )
-  })
-  
-  output$download_csv <- downloadHandler(
-    filename = function() { "subset_data.csv" },
-    content = function(file) {
-      write.csv(data()[input$subset_rows[1]:input$subset_rows[2], input$subset_columns], file)
-    }
-  )
-  
-  observeEvent(input$plot_data, {
-    req(data())
-    plot_data <- data()
-    if (input$plot_var == "Price") {
-      plot_data <- plot_data %>% select(timestamp, price)
-    } else {
-      plot_data <- plot_data %>% select(timestamp, volume)
-    }
-    output$data_plot <- renderPlot({
-      ggplot(plot_data, aes(x = timestamp, y = plot_data[[input$plot_var]])) +
-        geom_line(color = "blue", size = 1) +
-        geom_point(color = "red", size = 2) +
-        labs(title = paste("Bitcoin", input$plot_var, "Trend"),
-             x = "Timestamp",
-             y = input$plot_var) +
-        theme_minimal()
+    data <- get_coin_data(input$vs_currency, input$order, input$per_page)
+    output$downloaded_data <- renderDataTable({
+      datatable(data)
     })
-    output$summary_output <- renderPrint({
-      summary_data <- plot_data[[input$plot_var]]
-      if (input$summary_type == "Mean") {
-        mean(summary_data)
-      } else if (input$summary_type == "Median") {
-        median(summary_data)
-      } else {
-        sum(summary_data)
-      }
+    
+    # Save subsetted data as CSV
+    observeEvent(input$save_data, {
+      write.csv(data, "downloaded_data.csv", row.names = FALSE)
+    })
+  })
+  
+  # Server logic for Data Exploration tab
+  observeEvent(input$plot_button, {
+    data <- get_coin_data()  # Example: Fetch data for exploration
+    
+    output$exploration_plot <- renderPlot({
+      plot_data <- switch(input$plot_type,
+                          "histogram" = {
+                            ggplot(data, aes_string(x = input$plot_variable)) +
+                              geom_histogram(binwidth = 50, fill = "blue", color = "black") +
+                              ggtitle(paste("Histogram of", input$plot_variable))
+                          },
+                          "scatterplot" = {
+                            ggplot(data, aes_string(x = "market_cap", y = "total_volume")) +
+                              geom_point(color = "blue") +
+                              ggtitle("Scatterplot of Market Cap vs. Total Volume")
+                          },
+                          "boxplot" = {
+                            ggplot(data, aes_string(x = input$plot_variable, y = "price_change_percentage_24h")) +
+                              geom_boxplot(fill = "blue", color = "black") +
+                              ggtitle("Boxplot of Price Change Percentage by Variable")
+                          }
+      )
+      
+      print(plot_data)
+    })
+    
+    output$summary_text <- renderPrint({
+      summary_data <- summarise(data, mean = mean(!!sym(input$plot_variable), na.rm = TRUE),
+                                median = median(!!sym(input$plot_variable), na.rm = TRUE),
+                                sd = sd(!!sym(input$plot_variable), na.rm = TRUE))
+      print(summary_data)
     })
   })
 }
 
-shinyApp(ui, server)
+# Run the application
+shinyApp(ui = ui, server = server)
