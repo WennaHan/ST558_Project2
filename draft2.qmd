@@ -71,71 +71,15 @@ fetch_coin_data <- function(vs_currency = "usd",
 }
 
 # Example usage 1: default
-df_coins <- fetch_coin_data(vs_currency = "usd", 
+df <- fetch_coin_data(vs_currency = "usd", 
                       order = "market_cap_desc", 
                       per_page = 100)
-head(df_coins)
-```
-
-### Endpoint 2: Function to Get Market Data for NFTs.
-
-Users can modify three things:\
-1) vs_currency - The target currency for market data (default is "usd").\
-2) order - Order of the results. Options include market_cap_desc, volume_desc, market_cap_asc, etc. (default is "market_cap_desc") \
-3) per_page - Number of coins to return per page (default is 100, maximum is 250)
-
-```{r}
-# Define the function to fetch NFTs data from CoinGecko API
-fetch_nfts_data <- function(vs_currency = "usd", 
-                            order = "market_cap_desc", 
-                            per_page = 100) {
-  
-  # Set the base url, endpoint, and combine them for the full url.
-  baseURL <- "https://api.coingecko.com/api/v3/"
-  endpoint <- "nfts/markets"
-  fullURL <- paste0(baseURL, endpoint)
-  
-  # Parameters for the API call
-  params <- list(
-    vs_currency = vs_currency,
-    order = order,
-    per_page = per_page,
-    sparkline = "false"
-  )
-  
-  # Fetch data from the API
-  response <- GET(fullURL, query = params)
-  
-  # Check for a successful response
-  #if (response$status_code != 200) {
-    #stop("Failed to fetch data from CoinGecko API")
-  #}
-  
-  # Parse the response JSON
-  data <- fromJSON(content(response, as = "text"))
-  
-  # Convert to a data frame
-  df <- as.data.frame(data)
-  
-  return(df)
-}
-
-# Example usage 1: default
-df_nfts <- fetch_nfts_data(vs_currency = "usd", 
-                      order = "market_cap_desc", 
-                      per_page = 100)
-head(df_nfts)
-```
-
-
-
-
+head(df)
 
 # Example usage 2: customized - Currency and Sorting Order
 df_custom <- fetch_coin_data(vs_currency = "eur", 
                              order = "volume_desc", 
-                             per_page = 50, 
-                             page = 2)
+                             per_page = 50)
 head(df_custom)
 
 # Example usage 3: customized - Retrieve More Coins
@@ -143,8 +87,71 @@ df_more_coins <- fetch_coin_data(per_page = 200)
 head(df_more_coins)
 ```
 
+### Endpoint 2: Function to Get Historical Market Data for a specific Cryptocurrency
+
+Users can modify three things:\
+1) crypto_ids - List of cryptocurrencies to retrieve data for.\
+2) vs_currency - Currency to compare against.\
+3) days - Number of days of historical data.
+
+```{r}
+# Create a function to get historical market data for a specific cryptocurrency, allowing customization of the cryptocurrency ID and the number of days of historical data.
+# The default cryptocurrency is bitcoin.
+# The default comparing currency is US dollar.
+# The default the number of days of historical data is 30 days.
+get_historical_market_data <- function(crypto_id = 'bitcoin',
+                                       vs_currency = 'usd', 
+                                       days = 30) {
+  endpoint <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  params <- list( vs_currency = vs_currency,
+                  days = days)
+  
+  response <- GET(endpoint, query = params)
+  data <- fromJSON(content(response, as = "text"), flatten = TRUE)
+  
+  # Extracts prices and volumes, converts timestamps, and merges them into a single data frame.
+  prices <- data$prices
+  df_prices <- data.frame(timestamp = as.POSIXct(prices[, 1] / 1000, 
+                                                 origin = '1970-01-01'), 
+                          price = prices[, 2])
+  
+  volumes <- data$total_volumes
+  df_volumes <- data.frame(timestamp = as.POSIXct(volumes[, 1] / 1000, 
+                                                  origin = '1970-01-01'), 
+                           volume = volumes[, 2])
+  
+  market_data <- merge(df_prices, df_volumes, by = 'timestamp')
+  colnames(market_data) <- c('timestamp', 'price', 'volume')
+  
+  return(market_data)
+}
+
+# Example usage 1: default - Bitcoin for the last 30 days
+historical_data_bitcoin <- get_historical_market_data(crypto_id = 'bitcoin',
+                                              vs_currency = 'usd', 
+                                              days = 30)
+head(historical_data_bitcoin)
+
+# Example usage 2: customized - ethereum for the last 20 days
+historical_data_ethereum <- get_historical_market_data(crypto_id = 'ethereum',
+                                              vs_currency = 'usd', 
+                                              days = 20)
+head(historical_data_ethereum)
+
+# Example usage 3: customized - tether for the last 30 days compare with EUR
+historical_data_tether <- get_historical_market_data(crypto_id = 'tether',
+                                              vs_currency = 'eur', 
+                                              days = 30)
+head(historical_data_tether)
+```
+
+## Summarize the Data.
+
+### Summarize categorical data
+### Contingency table for market cap rank and price change category
 ```{r}
 # Create a new categorical variable for price change categories
+# based on the df_coins data
 df <- df |>
   mutate(price_change_category = cut(price_change_percentage_24h, 
                                      breaks = c(-Inf, -10, -1, 1, 10, Inf), 
@@ -156,10 +163,10 @@ df <- df |>
 
 # Contingency table for market cap rank and price change category
 contingency_table <- table(df$market_cap_rank, df$price_change_category)
-print(contingency_table)
+head(contingency_table)
 ```
 
-## Numerical Summaries
+## Summarize numerical data
 
 ```{r}
 # Summary statistics for current price by price change category
@@ -174,7 +181,7 @@ price_summary <- df |>
 print(price_summary)
 
 # Summary statistics for market cap by price change category
-market_cap_summary <- df |>
+market_cap_summary <- df_coins |>
   group_by(price_change_category) |>
   summarise(
     count = n(),
