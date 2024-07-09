@@ -1,8 +1,13 @@
 library(shiny)
 library(shinydashboard)
 library(ggplot2)
-library(dplyr)
 library(DT)
+library(httr)      # For making HTTP requests
+library(jsonlite)  # For handling JSON data
+library(dplyr)     # For data manipulation and summarization
+library(tidyr)     # For data tidying
+library(knitr)     # For generating reports
+library(reshape)
 
 # Define UI for the app
 ui <- dashboardPage(

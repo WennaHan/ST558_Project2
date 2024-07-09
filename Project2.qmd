@@ -24,6 +24,7 @@ library(dplyr)     # For data manipulation and summarization
 library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
 library(ggplot2)   # For data visualization
+library(reshape)
 ```
 
 ## Data Download Tab/API functions
@@ -95,9 +96,9 @@ head(df_more_coins)
 
 This function retrieves historical market data for a specific cryptocurrency:
 
-- crypto_id: Cryptocurrency ID (e.g., "bitcoin", "ethereum").
-- vs_currency: Currency for comparison (default is "usd").
-- days: Number of days of historical data.
+-   crypto_id: Cryptocurrency ID (e.g., "bitcoin", "ethereum").
+-   vs_currency: Currency for comparison (default is "usd").
+-   days: Number of days of historical data.
 
 ```{r}
 # Create a function to get historical market data for a specific cryptocurrency, allowing customization of the cryptocurrency ID and the number of days of historical data.
@@ -109,13 +110,17 @@ get_historical_market_data <- function(crypto_id = 'bitcoin',
                                        days = 30) {
   # Set the url with endpoint.
   baseURL <- "https://api.coingecko.com/api/v3/"
-  fullURL <- paste0(base_url, 'coins/', crypto_id, '/market_chart')
+  fullURL <- paste0(baseURL, 'coins/', crypto_id, '/market_chart')
   
   # Parameters for the API call
   params <- list( vs_currency = vs_currency,
                   days = days)
   
   response <- GET(fullURL, query = params)
+  if (response$status_code != 200) {
+    stop("Failed to fetch data from CoinGecko API")
+  }
+  
   data <- fromJSON(content(response, as = "text"), flatten = TRUE)
   
   # Extracts prices and volumes, converts timestamps, and merges them into a single data frame.
@@ -123,13 +128,14 @@ get_historical_market_data <- function(crypto_id = 'bitcoin',
   df_prices <- data.frame(timestamp = as.POSIXct(prices[, 1] / 1000, 
                                                  origin = '1970-01-01'), 
                           price = prices[, 2])
-  
+
   volumes <- data$total_volumes
   df_volumes <- data.frame(timestamp = as.POSIXct(volumes[, 1] / 1000, 
                                                   origin = '1970-01-01'), 
                            volume = volumes[, 2])
-  
+
   market_data <- merge(df_prices, df_volumes, by = 'timestamp')
+
   colnames(market_data) <- c('timestamp', 'price', 'volume')
   
   return(market_data)
@@ -150,7 +156,7 @@ head(historical_data_ethereum)
 # Example usage 3: customized - tether for the last 30 days compare with EUR
 historical_data_tether <- get_historical_market_data(crypto_id = 'tether',
                                               vs_currency = 'eur', 
-                                              days = 30)
+                                           days = 30)
 head(historical_data_tether)
 ```
 
@@ -200,7 +206,7 @@ price_summary <- df |>
 print(price_summary)
 
 # Summary statistics for market cap by price change category
-market_cap_summary <- df_coins |>
+market_cap_summary <- df |>
   group_by(price_change_category) |>
   summarise(
     count = n(),
@@ -276,7 +282,7 @@ cor_matrix <- round(cor(numeric_cols, use = "complete.obs"), 2)
 melted_cor_matrix <- melt(cor_matrix)
 
 # Create the heatmap
-heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = Var1, y = Var2, fill = value)) +
+heatmap_plot <- ggplot(data = melted_cor_matrix, aes(x = X1, y = X2, fill = value)) +
   geom_tile(color = "white") +
   scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                        midpoint = 0, limit = c(-1, 1), space = "Lab", 
@@ -313,5 +319,3 @@ price_trend_plot <- ggplot(data = historical_data_bitcoin,
 # Print the plot
 print(price_trend_plot)
 ```
-
-
