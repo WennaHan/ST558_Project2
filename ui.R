@@ -70,19 +70,31 @@ ui <- dashboardPage(
       
       # Data Exploration tab
       tabItem(tabName = "data_exploration",
+        fluidRow(
+          box(
+            title = "Data Exploration",
+            selectInput("plot_type", "Select Plot Type:", choices = c("histogram", "scatterplot", "boxplot")),
+            # Conditional UI for plot types
+            conditionalPanel(
+              condition = "input.plot_type == 'histogram'",
+              selectInput("plot_variable_x", "Select Variable:", choices = c("market_cap", "total_volume", "price_change_percentage_24h"))
+            ),
+            conditionalPanel(
+              condition = "input.plot_type != 'histogram'",
               fluidRow(
-                box(
-                  title = "Data Exploration",
-                  selectInput("plot_variable", "Select Variable:", choices = c("market_cap", "total_volume", "price_change_percentage_24h")),
-                  selectInput("plot_type", "Select Plot Type:", choices = c("histogram", "scatterplot", "boxplot")),
-                  actionButton("plot_button", "Generate Plot"),
-                  hr(),
-                  plotOutput("exploration_plot"),
-                  hr(),
-                  verbatimTextOutput("summary_text")
-                )
+                column(6, selectInput("plot_variable_x", "Select X Variable:", choices = c("market_cap", "total_volume", "price_change_percentage_24h"))),
+                column(6, selectInput("plot_variable_y", "Select Y Variable:", choices = c("market_cap", "total_volume", "price_change_percentage_24h")))
               )
+            ),
+            actionButton("plot_button", "Generate Plot"),
+            hr(),
+            plotOutput("exploration_plot"),
+            hr(),
+            verbatimTextOutput("summary_text")
+          )
+        )
       )
+
     )
   )
 )

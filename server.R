@@ -45,19 +45,19 @@ server <- function(input, output, session) {
     output$exploration_plot <- renderPlot({
       plot_data <- switch(input$plot_type,
                           "histogram" = {
-                            ggplot(data, aes_string(x = input$plot_variable)) +
+                            ggplot(data, aes_string(x = input$plot_variable_x)) +
                               geom_histogram(bins = 30, fill = "blue", color = "black") +
-                              ggtitle(paste("Histogram of", input$plot_variable))
+                              ggtitle(paste("Histogram of", input$plot_variable_x))
                           },
                           "scatterplot" = {
-                            ggplot(data, aes_string(x = "market_cap", y = "total_volume")) +
+                            ggplot(data, aes_string(x = input$plot_variable_x, y = input$plot_variable_y)) +
                               geom_point(color = "blue") +
-                              ggtitle("Scatterplot of Market Cap vs. Total Volume")
+                              ggtitle(paste("Scatterplot of", input$plot_variable_x, "vs.", input$plot_variable_y))
                           },
                           "boxplot" = {
-                            ggplot(data, aes_string(x = input$plot_variable, y = "price_change_percentage_24h")) +
+                            ggplot(data, aes_string(x = input$plot_variable_x, y = input$plot_variable_y)) +
                               geom_boxplot(fill = "blue", color = "black") +
-                              ggtitle("Boxplot of Price Change Percentage by Variable")
+                              ggtitle(paste("Boxplot of", input$plot_variable_x, "vs.", input$plot_variable_y))
                           }
       )
       
@@ -65,9 +65,9 @@ server <- function(input, output, session) {
     })
     
     output$summary_text <- renderPrint({
-      summary_data <- summarise(data, mean = mean(!!sym(input$plot_variable), na.rm = TRUE),
-                                median = median(!!sym(input$plot_variable), na.rm = TRUE),
-                                sd = sd(!!sym(input$plot_variable), na.rm = TRUE))
+      summary_data <- summarise(data, mean = mean(!!sym(input$plot_variable_x), na.rm = TRUE),
+                                median = median(!!sym(input$plot_variable_x), na.rm = TRUE),
+                                sd = sd(!!sym(input$plot_variable_x), na.rm = TRUE))
       print(summary_data)
     })
   })
