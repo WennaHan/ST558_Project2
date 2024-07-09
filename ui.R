@@ -1,13 +1,15 @@
-library(shiny)
-library(shinydashboard)
-library(ggplot2)
-library(DT)
+# Load necessary libraries
 library(httr)      # For making HTTP requests
 library(jsonlite)  # For handling JSON data
 library(dplyr)     # For data manipulation and summarization
 library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
-library(reshape)
+library(ggplot2)   # For data visualization
+library(reshape)   # For data visualization
+library(shiny)     # For app built
+library(shinydashboard)
+library(ggplot2)
+library(DT)
 
 # Define UI for the app
 ui <- dashboardPage(
@@ -46,7 +48,7 @@ ui <- dashboardPage(
                     tags$li("Data Download: Fetch and explore raw cryptocurrency data."),
                     tags$li("Data Exploration: Visualize and summarize cryptocurrency data.")
                   ),
-                  tags$img(src = "coin_gecko_logo.png", height = 100, width = 100)
+                  tags$img(src = "https://support.coingecko.com/hc/article_attachments/4499575478169", height = 100, width = 100)
                 )
               )
       ),

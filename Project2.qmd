@@ -24,7 +24,8 @@ library(dplyr)     # For data manipulation and summarization
 library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
 library(ggplot2)   # For data visualization
-library(reshape)
+library(reshape)   # For data visualization
+library(shiny)     # For app built
 ```
 
 ## Data Download Tab/API functions
@@ -271,7 +272,7 @@ This heatmap displays the correlation matrix among selected numerical variables 
 
 ```{r}
 # Select numeric columns for the heatmap
-numeric_cols <- df %>% 
+numeric_cols <- df |>
   select(current_price, market_cap, total_volume, price_change_percentage_24h, 
          market_cap_change_percentage_24h, circulating_supply, total_supply)
 
