@@ -6,10 +6,9 @@ library(tidyr)     # For data tidying
 library(knitr)     # For generating reports
 library(ggplot2)   # For data visualization
 library(reshape)   # For data visualization
-library(shiny)     # For app built
-library(shinydashboard)
-library(ggplot2)
-library(DT)
+library(shiny)     # For app building
+library(shinydashboard) # For app building
+library(DT)        # For app building
 
 # Define UI for the app
 ui <- dashboardPage(
@@ -63,7 +62,8 @@ ui <- dashboardPage(
                   numericInput("per_page", "Coins per Page:", value = 100, min = 1, max = 250),
                   actionButton("download_data", "Download Data"),
                   hr(),
-                  dataTableOutput("downloaded_data")
+                  dataTableOutput("downloaded_data"),
+                  downloadButton("download_csv", "Download CSV")
                 )
               )
       ),
